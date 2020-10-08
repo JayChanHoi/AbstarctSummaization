@@ -1,4 +1,4 @@
-from transformers import PegasusForConditionalGeneration, PegasusTokenizer
+from transformers import PegasusForConditionalGeneration, PegasusTokenizer, AutoModelWithLMHead, AutoTokenizer
 import torch
 
 if __name__ == "__main__":
@@ -66,16 +66,24 @@ if __name__ == "__main__":
         "A spokeswoman for the first lady said Saturday that she was doing well and her symptoms haven’t worsened."
         "Republican Sens. Mike Lee of Utah, Thom Tillis of North Carolina and Ron Johnson of Wisconsin, as well as Republican National Committee Chairwoman Ronna McDaniel and the Rev. John Jenkins, the president of the University of Notre Dame, also tested positive. Many of those who tested positive attended a Rose Garden ceremony last Saturday where Mr. Trump announced his Supreme Court nominee. The event featured little social distancing or mask usage."
     ]
-    model_name = 'google/pegasus-billsum'
+    # model_name = 'google/pegasus-billsum'
     torch_device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-    tokenizer = PegasusTokenizer.from_pretrained(model_name)
-    model = PegasusForConditionalGeneration.from_pretrained(model_name).to(torch_device)
-    batch = tokenizer.prepare_seq2seq_batch(paragraph, truncation=True, padding='longest').to(torch_device)
-    translated = model.generate(**batch)
-    tgt_text = tokenizer.batch_decode(translated, skip_special_tokens=True)
+    model = AutoModelWithLMHead.from_pretrained("t5-large")
+    tokenizer = AutoTokenizer.from_pretrained("t5-large")
+
+    inputs = tokenizer.encode("summarize: " + paragraph[1], return_tensors="pt", max_length=512)
+    outputs = model.generate(inputs, max_length=500, min_length=100, length_penalty=2.0, num_beams=4, early_stopping=True)
+    tgt_text = tokenizer.batch_decode(outputs, skip_special_tokens=True)
+    # print(tgt_text)
+    # tokenizer = PegasusTokenizer.from_pretrained(model_name)
+    # model = PegasusForConditionalGeneration.from_pretrained(model_name).to(torch_device)
+    # batch = tokenizer.prepare_seq2seq_batch(paragraph, truncation=True, padding='longest').to(torch_device)
+    # translated = model.generate(**batch)
+    # tgt_text = tokenizer.batch_decode(translated, skip_special_tokens=True)
 
 
-    print(paragraph)
+    print(paragraph[1])
+    print('-------------------------------------------------------------------------------------------')
     print(tgt_text)
     print(tokenizer.vocab_size)
